@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+import sys
+import json
+import yaml
+import csv
+import os
+import xml.etree.ElementTree as ET
+
+def is_json(input_text):
+    try:
+        json.loads(input_text)
+        return True
+    except json.JSONDecodeError:
+        return False
+
+def format_json(input_text):
+    # Send the text to the jq command and return the result
+    os.system(f"echo '{input_text}' | jq")
+
+def is_xml(input_text):
+    try:
+        ET.fromstring(input_text)
+        return True
+    except ET.ParseError:
+        return False
+
+def format_xml(input_text):
+    # use xmllint 
+    os.system(f'echo "{input_text}" | xmllint --format -')
+
+def is_xsv(input_text):
+    lines = input_text.strip().split('\n')
+    if not lines:
+        return None
+    first_line = lines[0]
+    comma_count = first_line.count(',')
+    tab_count = first_line.count('\t')
+    
+    if comma_count > tab_count:
+        return "CSV"
+    elif tab_count > comma_count:
+        return "TSV"
+    else:
+        return None
+
+
+def format_xsv(input_text):
+    # use csvtool
+    os.system(f'echo "{input_text}" | csvtool format -')
+
+def is_yaml(input_text):
+    try:
+        yaml.safe_load(input_text)
+        return True  # If no exception, it's likely YAML.
+    except yaml.YAMLError:
+        return False
+
+def format_yaml(input_text):
+    # use yq
+    os.system(f'echo "{input_text}" | yamlfmt -')
+
+
+def clean_and_print(input_text):
+    # Simply clean the text, add new lines and print it
+    cleaned_text = input_text.strip()
+    print(cleaned_text)
+
+def determine_and_format(input_text):
+    if is_json(input_text):
+        format_json(input_text)
+        return
+    elif is_xml(input_text):
+        format_xml(input_text)
+        return
+    elif is_yaml(input_text):
+        format_yaml(input_text)
+        return
+    #elif is_xsv(input_text):
+    #    format_xsv(input_text)
+    #    return
+    # Otherwise just cleanup the plaintext and print it
+    clean_and_print(input_text)
+
+
+
+
+def main():
+    input_text = sys.stdin.read()
+    formatted_text = determine_and_format(input_text)
+
+
+if __name__ == "__main__":
+    main()
